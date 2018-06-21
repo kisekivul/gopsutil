@@ -17,17 +17,23 @@ import (
 
 // GetDockerStat returns a list of Docker basic stats.
 // This requires certain permission.
-func GetDockerStat() ([]CgroupDockerStat, error) {
-	return GetDockerStatWithContext(context.Background())
+func GetDockerStat(args ...bool) ([]CgroupDockerStat, error) {
+	return GetDockerStatWithContext(context.Background(), args != nil && args[0])
 }
 
-func GetDockerStatWithContext(ctx context.Context) ([]CgroupDockerStat, error) {
+func GetDockerStatWithContext(ctx context.Context, trunc bool) ([]CgroupDockerStat, error) {
 	path, err := exec.LookPath("docker")
 	if err != nil {
 		return nil, ErrDockerNotAvailable
 	}
 
-	out, err := invoke.CommandWithContext(ctx, path, "ps", "-a", "--no-trunc", "--format", "{{.ID}}|{{.Image}}|{{.Names}}|{{.Status}}")
+	args := []string{"ps", "-a"}
+	if !trunc {
+		args = append(args, "--no-trunc")
+	}
+	args = append(args, "--format", "{{.ID}}|{{.Image}}|{{.Names}}|{{.Status}}")
+
+	out, err := invoke.CommandWithContext(ctx, path, args...)
 	if err != nil {
 		return []CgroupDockerStat{}, err
 	}
@@ -58,17 +64,22 @@ func GetDockerStatWithContext(ctx context.Context) ([]CgroupDockerStat, error) {
 
 // GetDockerIDList returnes a list of DockerID.
 // This requires certain permission.
-func GetDockerIDList() ([]string, error) {
-	return GetDockerIDListWithContext(context.Background())
+func GetDockerIDList(args ...bool) ([]string, error) {
+	return GetDockerIDListWithContext(context.Background(), args != nil && args[0])
 }
 
-func GetDockerIDListWithContext(ctx context.Context) ([]string, error) {
+func GetDockerIDListWithContext(ctx context.Context, trunc bool) ([]string, error) {
 	path, err := exec.LookPath("docker")
 	if err != nil {
 		return nil, ErrDockerNotAvailable
 	}
 
-	out, err := invoke.CommandWithContext(ctx, path, "ps", "-q", "--no-trunc")
+	args := []string{"ps", "-a"}
+	if !trunc {
+		args = append(args, "--no-trunc")
+	}
+
+	out, err := invoke.CommandWithContext(ctx, path, args...)
 	if err != nil {
 		return []string{}, err
 	}
